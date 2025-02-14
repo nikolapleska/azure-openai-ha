@@ -1,13 +1,20 @@
 {
   "domain": "azure_nik_openai_conversation",
   "name": "Azure Nik OpenAI Conversation",
-  "codeowners": ["@joselcaguilar"],
-  "after_dependencies": ["assist_pipeline", "intent"],
+  "codeowners": [
+    "@jekalmin"
+  ],
   "config_flow": true,
-  "dependencies": ["conversation"],
+  "dependencies": [
+    "conversation"
+  ],
+  "after_dependencies": ["assist_pipeline", "intent"],
   "documentation": "https://github.com/nikolapleska/azure-openai-ha",
   "integration_type": "service",
   "iot_class": "cloud_polling",
-  "requirements": ["openai==1.59.9"],
+  "issue_tracker": "https://github.com/nikolapleska/azure-openai-ha/issues",
+  "requirements": [
+    "openai~=1.59.9"
+  ],
   "version": "1.0.0"
 }
