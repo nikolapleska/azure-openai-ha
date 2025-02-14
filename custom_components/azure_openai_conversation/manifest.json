@@ -9,6 +9,6 @@
   "integration_type": "service",
   "iot_class": "cloud_polling",
   "issue_tracker": "https://github.com/nikolapleska/azure-openai-ha/issues",
-  "requirements": ["openai==1.61.0"]
+  "requirements": ["openai==1.61.0"],
   "version": "2025.01.0"
 }
