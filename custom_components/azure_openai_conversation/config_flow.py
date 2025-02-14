@@ -1,4 +1,4 @@
-"""The Azure OpenAI Conversation integration."""
+"""Config flow for Azure OpenAI Conversation integration."""
 
 from __future__ import annotations
 
@@ -6,8 +6,12 @@ import logging
 from types import MappingProxyType
 from typing import Any
 
+# from functools import partial
+# import types
+
 import openai
 import voluptuous as vol
+# from openai import error
 
 from homeassistant.config_entries import (
     ConfigEntry,
@@ -18,13 +22,14 @@ from homeassistant.config_entries import (
 from homeassistant.const import CONF_API_KEY, CONF_LLM_HASS_API
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import llm
+
+# from homeassistant.data_entry_flow import FlowResult
 from homeassistant.helpers.selector import (
     NumberSelector,
     NumberSelectorConfig,
     SelectOptionDict,
     SelectSelector,
     SelectSelectorConfig,
-    SelectSelectorMode,
     TemplateSelector,
 )
 from homeassistant.helpers.typing import VolDictType
@@ -35,17 +40,14 @@ from .const import (
     CONF_CHAT_MODEL,
     CONF_MAX_TOKENS,
     CONF_PROMPT,
-    CONF_REASONING_EFFORT,
     CONF_RECOMMENDED,
     CONF_TEMPERATURE,
     CONF_TOP_P,
     DOMAIN,
     RECOMMENDED_CHAT_MODEL,
     RECOMMENDED_MAX_TOKENS,
-    RECOMMENDED_REASONING_EFFORT,
     RECOMMENDED_TEMPERATURE,
     RECOMMENDED_TOP_P,
-    UNSUPPORTED_MODELS,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -65,6 +67,17 @@ RECOMMENDED_OPTIONS = {
 }
 
 
+"""DEFAULT_OPTIONS = types.MappingProxyType(
+    {
+        CONF_PROMPT: DEFAULT_PROMPT,
+        CONF_CHAT_MODEL: DEFAULT_CHAT_MODEL,
+        CONF_MAX_TOKENS: DEFAULT_MAX_TOKENS,
+        CONF_TOP_P: DEFAULT_TOP_P,
+        CONF_TEMPERATURE: DEFAULT_TEMPERATURE,
+    }
+)"""
+
+
 async def validate_input(hass: HomeAssistant, data: dict[str, Any]) -> None:
     """Validate the user input allows us to connect.
 
@@ -76,7 +89,12 @@ async def validate_input(hass: HomeAssistant, data: dict[str, Any]) -> None:
         api_version=data[CONF_API_VERSION],
     )
     await hass.async_add_executor_job(client.with_options(timeout=10.0).models.list)
-  
+    """openai.api_type = "azure"
+    openai.api_key = data[CONF_API_KEY]
+    openai.api_base = data[CONF_API_BASE]
+    openai.api_version = data[CONF_API_VERSION]
+
+    await hass.async_add_executor_job(partial(openai.Model.list, request_timeout=10))"""
 
 
 class AzureOpenAIConfigFlow(ConfigFlow, domain=DOMAIN):
@@ -101,7 +119,7 @@ class AzureOpenAIConfigFlow(ConfigFlow, domain=DOMAIN):
             errors["base"] = "cannot_connect"
         except openai.AuthenticationError:
             errors["base"] = "invalid_auth"
-        except Exception:
+        except Exception:  # pylint: disable=broad-except
             _LOGGER.exception("Unexpected exception")
             errors["base"] = "unknown"
         else:
@@ -131,39 +149,35 @@ class AzureOpenAIOptionsFlow(OptionsFlow):
         self.last_rendered_recommended = config_entry.options.get(
             CONF_RECOMMENDED, False
         )
-    """self.config_entry = config_entry"""
+        self.config_entry = config_entry
 
     async def async_step_init(
         self, user_input: dict[str, Any] | None = None
     ) -> ConfigFlowResult:
         """Manage the options."""
         options: dict[str, Any] | MappingProxyType[str, Any] = self.config_entry.options
-        errors: dict[str, str] = {}
 
         if user_input is not None:
             if user_input[CONF_RECOMMENDED] == self.last_rendered_recommended:
                 if user_input[CONF_LLM_HASS_API] == "none":
                     user_input.pop(CONF_LLM_HASS_API)
+                return self.async_create_entry(title="", data=user_input)
 
-                if user_input.get(CONF_CHAT_MODEL) in UNSUPPORTED_MODELS:
-                    errors[CONF_CHAT_MODEL] = "model_not_supported"
-                else:
-                    return self.async_create_entry(title="", data=user_input)
-            else:
-                # Re-render the options again, now with the recommended options shown/hidden
-                self.last_rendered_recommended = user_input[CONF_RECOMMENDED]
+            # Re-render the options again, now with the recommended options shown/hidden
+            self.last_rendered_recommended = user_input[CONF_RECOMMENDED]
 
-                options = {
-                    CONF_RECOMMENDED: user_input[CONF_RECOMMENDED],
-                    CONF_PROMPT: user_input[CONF_PROMPT],
-                    CONF_LLM_HASS_API: user_input[CONF_LLM_HASS_API],
-                }
-
+            options = {
+                CONF_RECOMMENDED: user_input[CONF_RECOMMENDED],
+                CONF_PROMPT: user_input[CONF_PROMPT],
+                CONF_LLM_HASS_API: user_input[CONF_LLM_HASS_API],
+            }
+            return self.async_create_entry(
+                title="Azure OpenAI Conversation", data=user_input
+            )
         schema = azure_openai_config_option_schema(self.hass, options)
         return self.async_show_form(
             step_id="init",
             data_schema=vol.Schema(schema),
-            errors=errors,
         )
 
 
@@ -185,6 +199,7 @@ def azure_openai_config_option_schema(
         )
         for api in llm.async_get_apis(hass)
     )
+
     schema: VolDictType = {
         vol.Optional(
             CONF_PROMPT,
@@ -229,17 +244,6 @@ def azure_openai_config_option_schema(
                 description={"suggested_value": options.get(CONF_TEMPERATURE)},
                 default=RECOMMENDED_TEMPERATURE,
             ): NumberSelector(NumberSelectorConfig(min=0, max=2, step=0.05)),
-            vol.Optional(
-                CONF_REASONING_EFFORT,
-                description={"suggested_value": options.get(CONF_REASONING_EFFORT)},
-                default=RECOMMENDED_REASONING_EFFORT,
-            ): SelectSelector(
-                SelectSelectorConfig(
-                    options=["low", "medium", "high"],
-                    translation_key="reasoning_effort",
-                    mode=SelectSelectorMode.DROPDOWN,
-                )
-            ),
         }
     )
     return schema
