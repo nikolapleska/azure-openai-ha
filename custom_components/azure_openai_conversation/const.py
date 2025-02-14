@@ -2,7 +2,7 @@
 
 import logging
 
-DOMAIN = "azure_openai_conversation"
+DOMAIN = "azure_nik_openai_conversation"
 LOGGER = logging.getLogger(__package__)
 
 CONF_RECOMMENDED = "recommended"
