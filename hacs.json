@@ -1,6 +1,6 @@
 {
-  "name": "azure_openai_conversation",
+  "name": "Azure Nikola OpenAI Conversation",
   "content_in_root": false,
   "homeassistant": "2023.4.0",
-  "config_flow": true
+  "render_readme": true
 }
