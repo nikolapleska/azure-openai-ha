@@ -3,9 +3,7 @@
     "step": {
       "user": {
         "data": {
-          "api_key": "[%key:common::config_flow::data::api_key%]",
-          "api_base": "[%key:common::config_flow::data::api_base%]",
-          "api_version": "[%key:common::config_flow::data::api_version%]"
+          "api_key": "[%key:common::config_flow::data::api_key%]"
         }
       }
     },
@@ -19,17 +17,31 @@
     "step": {
       "init": {
         "data": {
-          "prompt": "Prompt Template",
-          "model": "Completion Model",
+          "prompt": "Instructions",
+          "chat_model": "[%key:common::generic::model%]",
           "max_tokens": "Maximum tokens to return in response",
           "temperature": "Temperature",
           "top_p": "Top P",
           "llm_hass_api": "[%key:common::config_flow::data::llm_hass_api%]",
-          "recommended": "Recommended model settings"
+          "recommended": "Recommended model settings",
+          "reasoning_effort": "Reasoning effort"
         },
         "data_description": {
-          "prompt": "Instruct how the LLM should respond. This can be a template."
+          "prompt": "Instruct how the LLM should respond. This can be a template.",
+          "reasoning_effort": "How many reasoning tokens the model should generate before creating a response to the prompt (for certain reasoning models)"
         }
+      }
+    },
+    "error": {
+      "model_not_supported": "This model is not supported, please select a different model"
+    }
+  },
+  "selector": {
+    "reasoning_effort": {
+      "options": {
+        "low": "Low",
+        "medium": "Medium",
+        "high": "High"
       }
     }
   },
