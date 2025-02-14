@@ -182,8 +182,7 @@ class AzureOpenAIOptionsFlow(OptionsFlow):
 
 
 def azure_openai_config_option_schema(
-    hass: HomeAssistant,
-    options: dict[str, Any] | MappingProxyType[str, Any],
+    hass: HomeAssistant, options: MappingProxyType[str, Any]
 ) -> VolDictType:
     """Return a schema for Azure OpenAI completion options."""
     hass_apis: list[SelectOptionDict] = [
