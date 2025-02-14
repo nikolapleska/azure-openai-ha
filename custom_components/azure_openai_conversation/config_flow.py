@@ -1,4 +1,4 @@
-"""Config flow for Azure OpenAI Conversation integration."""
+"""The Azure OpenAI Conversation integration."""
 
 from __future__ import annotations
 
@@ -30,8 +30,8 @@ from homeassistant.helpers.selector import (
 from homeassistant.helpers.typing import VolDictType
 
 from .const import (
-    CONF_AZURE_ENDPOINT,
-    CONF_AZURE_DEPLOYMENT_ID,
+    CONF_API_BASE,
+    CONF_API_VERSION,
     CONF_CHAT_MODEL,
     CONF_MAX_TOKENS,
     CONF_PROMPT,
@@ -53,8 +53,8 @@ _LOGGER = logging.getLogger(__name__)
 STEP_USER_DATA_SCHEMA = vol.Schema(
     {
         vol.Required(CONF_API_KEY): str,
-        vol.Required(CONF_AZURE_ENDPOINT): str,
-        vol.Required(CONF_AZURE_DEPLOYMENT_ID): str,
+        vol.Required(CONF_API_BASE): str,
+        vol.Required(CONF_API_VERSION): str,
     }
 )
 
@@ -64,14 +64,20 @@ RECOMMENDED_OPTIONS = {
     CONF_PROMPT: llm.DEFAULT_INSTRUCTIONS_PROMPT,
 }
 
+
 async def validate_input(hass: HomeAssistant, data: dict[str, Any]) -> None:
-    """Validate the user input allows us to connect."""
+    """Validate the user input allows us to connect.
+
+    Data has the keys from STEP_USER_DATA_SCHEMA with values provided by the user.
+    """
     client = openai.AsyncAzureOpenAI(
         api_key=data[CONF_API_KEY],
-        azure_endpoint=data[CONF_AZURE_ENDPOINT],
-        azure_deployment_id=data[CONF_AZURE_DEPLOYMENT_ID],
+        base_url=data[CONF_API_BASE],
+        api_version=data[CONF_API_VERSION],
     )
     await hass.async_add_executor_job(client.with_options(timeout=10.0).models.list)
+  
+
 
 class AzureOpenAIConfigFlow(ConfigFlow, domain=DOMAIN):
     """Handle a config flow for Azure OpenAI Conversation."""
@@ -100,7 +106,7 @@ class AzureOpenAIConfigFlow(ConfigFlow, domain=DOMAIN):
             errors["base"] = "unknown"
         else:
             return self.async_create_entry(
-                title="Azure OpenAI",
+                title="Azure OpenAI Conversation",
                 data=user_input,
                 options=RECOMMENDED_OPTIONS,
             )
@@ -116,6 +122,7 @@ class AzureOpenAIConfigFlow(ConfigFlow, domain=DOMAIN):
         """Create the options flow."""
         return AzureOpenAIOptionsFlow(config_entry)
 
+
 class AzureOpenAIOptionsFlow(OptionsFlow):
     """Azure OpenAI config flow options handler."""
 
@@ -124,6 +131,7 @@ class AzureOpenAIOptionsFlow(OptionsFlow):
         self.last_rendered_recommended = config_entry.options.get(
             CONF_RECOMMENDED, False
         )
+    """self.config_entry = config_entry"""
 
     async def async_step_init(
         self, user_input: dict[str, Any] | None = None
@@ -142,6 +150,7 @@ class AzureOpenAIOptionsFlow(OptionsFlow):
                 else:
                     return self.async_create_entry(title="", data=user_input)
             else:
+                # Re-render the options again, now with the recommended options shown/hidden
                 self.last_rendered_recommended = user_input[CONF_RECOMMENDED]
 
                 options = {
@@ -156,6 +165,7 @@ class AzureOpenAIOptionsFlow(OptionsFlow):
             data_schema=vol.Schema(schema),
             errors=errors,
         )
+
 
 def azure_openai_config_option_schema(
     hass: HomeAssistant,
@@ -175,10 +185,7 @@ def azure_openai_config_option_schema(
         )
         for api in llm.async_get_apis(hass)
     )
-
     schema: VolDictType = {
-        vol.Required(CONF_AZURE_ENDPOINT, default=options.get(CONF_AZURE_ENDPOINT, "")): str,
-        vol.Required(CONF_AZURE_DEPLOYMENT_ID, default=options.get(CONF_AZURE_DEPLOYMENT_ID, "")): str,
         vol.Optional(
             CONF_PROMPT,
             description={
